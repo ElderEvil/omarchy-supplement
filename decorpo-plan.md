@@ -1,17 +1,17 @@
-# DeGoogle Alternatives Installation Plan
+# Decorp Alternatives Installation Plan
 
 ## Overview
-A comprehensive plan to replace Google services with privacy-focused, open-source alternatives on Arch Linux.
+A comprehensive plan to replace corporate services with privacy-focused, open-source alternatives on Arch Linux.
 
 ## Service Replacements
 
-| Google Service | Alternative | Package | Installation Method | Notes |
+| Corporate Service | Alternative | Package | Installation Method | Notes |
 |---------------|-------------|----------|------------------|---------|
 | Gmail | Proton Mail | `proton-mail-bin` | AUR - Encrypted email, Swiss privacy |
 | Google Maps | Organic Maps | `organicmaps` | AUR - Offline maps, OpenStreetMap data |
 | Google Drive | Syncthing | `syncthing` | Official Arch repo - P2P file sync |
 | Google Photos | Immich | Client/Web access | **Server runs on user's server** |
-| ChatGPT Web | T3 Chat | `t3-chat-electron-git` | AUR - Privacy-focused AI chat, desktop app |
+| ChatGPT Web | Open WebUI | `open-webui` | AUR - Local AI chat interface, separate app |
 | Google Search | DuckDuckGo | Browser setting | No installation needed |
 | Google Chrome | Zen Browser | `zen-browser-bin` | Already installed, privacy-focused |
 
@@ -21,7 +21,7 @@ A comprehensive plan to replace Google services with privacy-focused, open-sourc
 ```bash
 #!/bin/sh
 
-echo "Installing privacy-focused Google alternatives..."
+echo "Installing privacy-focused corporate alternatives..."
 
 # Install Proton Mail (email alternative)
 yay -S --noconfirm --needed proton-mail-bin
@@ -32,8 +32,8 @@ yay -S --noconfirm --needed organicmaps
 # Install Syncthing (file sync alternative)
 yay -S --noconfirm --needed syncthing
 
-# Install T3 Chat (ChatGPT alternative)
-yay -S --noconfirm --needed t3-chat-electron-git
+# Install Open WebUI (ChatGPT alternative)
+yay -S --noconfirm --needed open-webui
 
 # Note: Immich server runs on user's server
 # Client access via web browser or mobile app
@@ -64,6 +64,7 @@ echo "Access points:"
 echo "- Proton Mail: Launch from applications menu"
 echo "- Organic Maps: Launch from applications menu"  
 echo "- Syncthing: http://localhost:8384"
+echo "- Open WebUI: http://localhost:3000 (after starting service)"
 echo "- Immich: Your server URL in web browser"
 ```
 
@@ -93,13 +94,14 @@ echo "- Immich: Your server URL in web browser"
 - **Features**: Photo management, facial recognition, automatic backup
 - **Setup**: No local installation needed for client
 
-### T3 Chat
-- **Package**: `t3-chat-electron-git` (AUR, maintained by original creator)
-- **Features**: Privacy-focused AI chat, supports multiple AI models, desktop app
-- **Installation**: Electron-based desktop application
-- **Advantages**: Desktop integration, better privacy than ChatGPT web, offline capabilities
-- **Web Alternative**: https://t3.chat (always available)
-- **Note**: Created by Theo (t3.gg), actively maintained
+### Open WebUI
+- **Package**: `open-webui` (AUR, 23 votes, actively maintained)
+- **Features**: Local AI chat interface, OpenAI API compatible, supports Ollama
+- **Installation**: Web-based application, runs as separate service
+- **Access**: http://localhost:3000 (after starting service)
+- **Advantages**: Runs locally, no data sent to external services, supports multiple LLMs
+- **Setup**: Requires `systemctl --user enable --now open-webui` or manual start
+- **Note**: Can be used with local models via Ollama or external API keys
 
 ### Additional Privacy Options
 
@@ -125,7 +127,7 @@ echo "- Immich: Your server URL in web browser"
 ## Complexity Assessment
 
 - **Easy**: Proton Mail, Organic Maps, Syncthing
-- **Medium**: Privacy configuration and defaults
+- **Medium**: Open WebUI setup, privacy configuration and defaults
 - **Server-side**: Immich (handled by user)
 
 ## Dependencies
