@@ -45,25 +45,55 @@ echo
 echo "2. Checking Waybar language indicator..."
 if grep -q '"hyprland/language"' "$WAYBAR_CONFIG"; then
     echo "✓ Language indicator already in waybar config"
+    
+    if ! grep -A 5 '"hyprland/language":' "$WAYBAR_CONFIG" | grep -q '"on-click"'; then
+         echo "⚠ Adding on-click functionality to language indicator..."
+         backup_file "$WAYBAR_CONFIG"
+         
+         KEYBOARD_DEVICE=$(hyprctl devices | grep -A 1 "main: yes" | grep "^	" | head -1 | xargs)
+         if [ -z "$KEYBOARD_DEVICE" ]; then
+             KEYBOARD_DEVICE=$(hyprctl devices | grep -B 1 "rules:.*l \"us,ua\"" | grep -v "video-bus\|power-button" | head -1 | xargs)
+         fi
+         
+         sed -i '/"hyprland/language": {/,/},\?$/c\  "hyprland/language": {\n    "format": "{}",\n    "format-en": "US",\n    "format-ua": "UA",\n    "on-click": "hyprctl switchxkblayout '"$KEYBOARD_DEVICE"' next"\n  },' "$WAYBAR_CONFIG"
+         
+         echo "✓ Added on-click functionality to language indicator"
+    else
+        echo "✓ Language indicator already has on-click configured"
+    fi
 else
     echo "⚠ Adding language indicator to waybar..."
     backup_file "$WAYBAR_CONFIG"
     
-    sed -i '/"modules-right": \[/,/\]/ {
-        /"modules-right": \[/a\    "hyprland/language",
-    }' "$WAYBAR_CONFIG"
+    awk '
+        /"modules-right": \[/ {
+            print
+            print "    \"hyprland/language\","
+            next
+        }
+        { print }
+    ' "$WAYBAR_CONFIG" > "${WAYBAR_CONFIG}.tmp" && mv "${WAYBAR_CONFIG}.tmp" "$WAYBAR_CONFIG"
     
     if ! grep -q '"hyprland/language":' "$WAYBAR_CONFIG"; then
-        cat >> "$WAYBAR_CONFIG" <<'EOF'
-  "hyprland/language": {
-    "format": "{}",
-    "format-en": "US",
-    "format-ua": "UK-UA"
-  },
-EOF
+        KEYBOARD_DEVICE=$(hyprctl devices | grep -A 1 "main: yes" | grep "^\t" | head -1 | xargs)
+        if [ -z "$KEYBOARD_DEVICE" ]; then
+            KEYBOARD_DEVICE=$(hyprctl devices | grep -B 1 "rules:.*l \"us,ua\"" | grep -v "video-bus\|power-button" | head -1 | xargs)
+        fi
+        
+        awk -v kb="$KEYBOARD_DEVICE" '
+            /^}$/ {
+                print "  \"hyprland/language\": {"
+                print "    \"format\": \"{}\","
+                print "    \"format-en\": \"US\","
+                print "    \"format-ua\": \"UA\","
+                print "    \"on-click\": \"hyprctl switchxkblayout " kb " next\""
+                print "  },"
+            }
+            { print }
+        ' "$WAYBAR_CONFIG" > "${WAYBAR_CONFIG}.tmp" && mv "${WAYBAR_CONFIG}.tmp" "$WAYBAR_CONFIG"
     fi
     
-    echo "✓ Added language indicator to waybar config"
+    echo "✓ Added clickable language indicator to waybar config"
 fi
 
 echo
