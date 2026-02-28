@@ -5,3 +5,5 @@
 . ./install-zed-editor.sh
 . ./install-telegram-desktop.sh
 . ./install-bitwarden.sh
+. ./install-framework-power.sh
+. ./install-steam-mangohud.sh
