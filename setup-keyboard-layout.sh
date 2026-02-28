@@ -46,14 +46,49 @@ echo "2. Checking Waybar language indicator..."
 if grep -q '"hyprland/language"' "$WAYBAR_CONFIG"; then
     echo "✓ Language indicator already in waybar config"
     
-    if ! grep -A 5 '"hyprland/language":' "$WAYBAR_CONFIG" | grep -q '"on-click"'; then
-         echo "⚠ Adding on-click functionality to language indicator..."
-         backup_file "$WAYBAR_CONFIG"
-         
-         KEYBOARD_DEVICE=$(hyprctl devices | grep -A 1 "main: yes" | grep "^	" | head -1 | xargs)
-         if [ -z "$KEYBOARD_DEVICE" ]; then
-             KEYBOARD_DEVICE=$(hyprctl devices | grep -B 1 "rules:.*l \"us,ua\"" | grep -v "video-bus\|power-button" | head -1 | xargs)
-         fi
+     if ! grep -A 5 '"hyprland/language":' "$WAYBAR_CONFIG" | grep -q '"on-click"'; then
+          echo "⚠ Adding on-click functionality to language indicator..."
+          backup_file "$WAYBAR_CONFIG"
+          
+          # 3-tier keyboard detection: (1) main: yes device, (2) fcitx5 virtual keyboard,
+          # (3) first real keyboard. Needed because some systems (e.g., Framework Laptop
+          # with fcitx5) have no keyboard marked main: yes, requiring fallback detection.
+          
+          # Strategy 1: Look for device marked as main: yes
+          KEYBOARD_DEVICE=$(hyprctl devices | sed -n '/^Keyboards:/,/^[A-Z]/p' | awk '
+              /^		[a-z]/ { device=$1 }
+              /main: yes/ { print device; exit }
+          ')
+          
+          # Strategy 2: Fallback to fcitx5 virtual keyboard if present
+          if [ -z "$KEYBOARD_DEVICE" ]; then
+              KEYBOARD_DEVICE=$(hyprctl devices | sed -n '/^Keyboards:/,/^[A-Z]/p' | awk '
+                  /^		hl-virtual-keyboard-fcitx5/ { print $1; exit }
+              ')
+          fi
+          
+          # Strategy 3: Fallback to first real keyboard (exclude system/virtual devices)
+          if [ -z "$KEYBOARD_DEVICE" ]; then
+              KEYBOARD_DEVICE=$(hyprctl devices | sed -n '/^Keyboards:/,/^[A-Z]/p' | awk '
+                  /^		[a-z]/ { 
+                      device=$1
+                      if (device ~ /video-bus|power-button|system-control|consumer-control|wireless-radio/) {
+                          device=""
+                      }
+                  }
+                  /rules:.*l "us,ua"/ && device != "" { 
+                      print device
+                      exit
+                  }
+              ')
+          fi
+          
+          if [ -z "$KEYBOARD_DEVICE" ]; then
+              echo "✗ ERROR: Could not detect keyboard device"
+              echo "  Please check: hyprctl devices"
+              echo "  And manually set the device in waybar config"
+              exit 1
+          fi
          
          sed -i '/"hyprland/language": {/,/},\?$/c\  "hyprland/language": {\n    "format": "{}",\n    "format-en": "US",\n    "format-ua": "UA",\n    "on-click": "hyprctl switchxkblayout '"$KEYBOARD_DEVICE"' next"\n  },' "$WAYBAR_CONFIG"
          
@@ -74,11 +109,46 @@ else
         { print }
     ' "$WAYBAR_CONFIG" > "${WAYBAR_CONFIG}.tmp" && mv "${WAYBAR_CONFIG}.tmp" "$WAYBAR_CONFIG"
     
-    if ! grep -q '"hyprland/language":' "$WAYBAR_CONFIG"; then
-        KEYBOARD_DEVICE=$(hyprctl devices | grep -A 1 "main: yes" | grep "^\t" | head -1 | xargs)
-        if [ -z "$KEYBOARD_DEVICE" ]; then
-            KEYBOARD_DEVICE=$(hyprctl devices | grep -B 1 "rules:.*l \"us,ua\"" | grep -v "video-bus\|power-button" | head -1 | xargs)
-        fi
+     if ! grep -q '"hyprland/language":' "$WAYBAR_CONFIG"; then
+          # 3-tier keyboard detection: (1) main: yes device, (2) fcitx5 virtual keyboard,
+          # (3) first real keyboard. Needed because some systems (e.g., Framework Laptop
+          # with fcitx5) have no keyboard marked main: yes, requiring fallback detection.
+          
+          # Strategy 1: Look for device marked as main: yes
+          KEYBOARD_DEVICE=$(hyprctl devices | sed -n '/^Keyboards:/,/^[A-Z]/p' | awk '
+              /^		[a-z]/ { device=$1 }
+              /main: yes/ { print device; exit }
+          ')
+          
+          # Strategy 2: Fallback to fcitx5 virtual keyboard if present
+          if [ -z "$KEYBOARD_DEVICE" ]; then
+              KEYBOARD_DEVICE=$(hyprctl devices | sed -n '/^Keyboards:/,/^[A-Z]/p' | awk '
+                  /^		hl-virtual-keyboard-fcitx5/ { print $1; exit }
+              ')
+          fi
+          
+          # Strategy 3: Fallback to first real keyboard (exclude system/virtual devices)
+          if [ -z "$KEYBOARD_DEVICE" ]; then
+              KEYBOARD_DEVICE=$(hyprctl devices | sed -n '/^Keyboards:/,/^[A-Z]/p' | awk '
+                  /^		[a-z]/ { 
+                      device=$1
+                      if (device ~ /video-bus|power-button|system-control|consumer-control|wireless-radio/) {
+                          device=""
+                      }
+                  }
+                  /rules:.*l "us,ua"/ && device != "" { 
+                      print device
+                      exit
+                  }
+              ')
+          fi
+          
+          if [ -z "$KEYBOARD_DEVICE" ]; then
+              echo "✗ ERROR: Could not detect keyboard device"
+              echo "  Please check: hyprctl devices"
+              echo "  And manually set the device in waybar config"
+              exit 1
+          fi
         
         awk -v kb="$KEYBOARD_DEVICE" '
             /^}$/ {
